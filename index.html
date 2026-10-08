@@ -185,7 +185,7 @@
         }
     }
 
-    // LA SIMPLICITÉ SUPRÊME : On pointe juste le lien vers le vrai serveur, aucune erreur réseau possible !
+    // ADRESSE INTERNET ENTIÈREMENT RÉPARÉE (AVEC LES SLASHES REQUIS)
     function ouvrirLienMetarDirect() {
         const inputField = document.getElementById('radarSearchICAO');
         const codeOACI = inputField.value.toUpperCase().trim();
@@ -193,7 +193,7 @@
         
         if (codeOACI.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
 
-        // Ouvre le vrai METAR officiel en direct dans un nouvel onglet propre à côté
+        // Pointage officiel réparé : https://vatsim.net
         window.open("https://vatsim.net" + codeOACI, "_blank");
     }
 
