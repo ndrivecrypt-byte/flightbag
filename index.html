@@ -71,23 +71,23 @@
     </div>
 </div>
 
-<!-- SECTION 2 NETTOYÉE ET IMMUNISÉE CONTRE TOUS LES BLOCAGES SÉCURITÉ -->
+<!-- LE COMPARTIMENT METAR CORRIGÉ AVEC LE WIDGET INTERNATIONALE AUTORISÉ -->
 <div class="container" style="border-color: #38bdf8;">
-    <h2 class="title" style="color: #38bdf8;">📡 2. Station Météo Radar Live (Flux Graphique NOAA Direct)</h2>
-    <div class="grid-layout-3" style="align-items: end;">
+    <h2 class="title" style="color: #38bdf8;">📡 2. Station Météo Radar Live (Widget NOAA / METAR-TAF)</h2>
+    <div class="grid-layout-3" style="align-items: end; margin-bottom: 4px;">
         <div class="input-group">
             <label style="color: #38bdf8; font-weight: bold;">🔎 Code OACI Terrain</label>
-            <input type="text" id="radarSearchICAO" placeholder="ex: LFLL" maxlength="4" style="border-color: #38bdf8; text-transform: uppercase;">
+            <input type="text" id="radarSearchICAO" placeholder="ex: LFPO" maxlength="4" style="border-color: #38bdf8; text-transform: uppercase;">
         </div>
         <div class="input-group">
-            <button class="btn-act" style="background-color: #0284c7; height: 44px;" onclick="triggerImageRadarMetar()">📡 SCANNER LE TERRAIN</button>
+            <button class="btn-act btn-g" style="height: 44px;" onclick="triggerWidgetRadarMetar()">📡 SCANNER LE TERRAIN</button>
         </div>
         <div class="input-group" style="display: none;"></div>
     </div>
     
-    <!-- Zone d'injection de la carte météo officielle pré-générée -->
-    <div id="radarImageWrapper" class="radar-frame-box">
-        <img id="radarMetarImg" src="" class="radar-image" alt="Chargement de la trame météo en cours...">
+    <!-- Fenêtre d'affichage sécurisée autorisée nativement sur GitHub Pages (Hauteur ajustée à 125px pour la trame brute) -->
+    <div id="radarWidgetWrapper" style="display: none; margin-top: 15px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; overflow: hidden; height: 125px; width: 100%;">
+        <iframe id="radarMetarIframe" src="" style="width: 100%; height: 100%; border: none;" scrolling="no"></iframe>
     </div>
 </div>
 
@@ -132,7 +132,7 @@
 </div>
 
 <div class="act-bar">
-    <button class="btn-act btn-g" onclick="saveFlight()">💾 Enregistrer Vol</button>
+    <button class="btn-act btn-g" style="background-color: #10b981;" onclick="saveFlight()">💾 Enregistrer Vol</button>
     <button class="btn-act btn-o" onclick="exportCSV()">📤 Exporter CSV</button>
     <button class="btn-act btn-p" onclick="window.print()">🖨️ Imprimer</button>
     <button class="btn-act btn-r" onclick="clearAllHistory()">🗑️ Tout effacer</button>
@@ -189,21 +189,21 @@
         }
     }
 
-    // METHODE INFAILLIBLE DU COCKPIT EN LIGNE : Charge l'image pré-décodée générée par ticket
-    function triggerImageRadarMetar() {
+    // DISPOSITIF PARFAIT : Utilise le widget officiel de partage de metar-taf conçu pour le web
+    function triggerWidgetRadarMetar() {
         const inputField = document.getElementById('radarSearchICAO');
-        const icao = inputField.value.toUpperCase().trim();
-        inputField.value = icao;
+        const codeOACI = inputField.value.toUpperCase().trim();
+        inputField.value = codeOACI;
         
-        const wrapper = document.getElementById('radarImageWrapper');
-        const img = document.getElementById('radarMetarImg');
+        const wrapper = document.getElementById('radarWidgetWrapper');
+        const iframe = document.getElementById('radarMetarIframe');
         
-        if (icao.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
+        if (codeOACI.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
 
         wrapper.style.display = "block";
         
-        // Appel d'un ticket graphique sécurisé de metar-taf (Les images ne subissent aucun blocage CORS sur le web)
-        img.src = `https://metartaf.com{icao}/ticket.png?timestamp=${new Date().getTime()}`;
+        // Connexion sécurisée au composant officiel libre en mode sombre (theme=dark) et texte brut (brut=1)
+        iframe.src = "https://metartaf.com" + codeOACI + "?v=2&theme=dark&metric=1&brut=1";
     }
 
     function calcW() {
