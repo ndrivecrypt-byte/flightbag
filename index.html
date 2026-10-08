@@ -245,7 +245,7 @@
             const v = document.getElementById(id).value; 
             if (!v || !v.includes(':')) return null;
             const p = v.split(':'); 
-            return (parseInt(p, 10) * 60) + parseInt(p, 10);
+            return (parseInt(p[0], 10) * 60) + parseInt(p[1], 10);
         }
         function fmt(d) { 
             if (d < 0) d += 1440; 
@@ -312,17 +312,19 @@
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
+    // SYSTEME ULTRA-SOUPLE DE CONVERSION DES MINUTES POUR LES STATS
     function parseTimeToMinutes(s) { 
-        if (!s || !s.includes(':')) return 0;
-        let p = s.split(':'); 
-        return (parseInt(p, 10) * 60) + parseInt(p, 10); 
+        if (!s) return 0;
+        let clean = s.toLowerCase().replace('h', ':').trim();
+        if (!clean.includes(':')) return 0;
+        let p = clean.split(':'); 
+        return (parseInt(p[0], 10) * 60) + parseInt(p[1], 10); 
     }
     
     function formatMinutesToHoursStr(m) { 
         return String(Math.floor(m / 60)).padStart(2, '0') + "h" + String(m % 60).padStart(2, '0'); 
     }
 
-    // REPARATION DU VISUEL DES ROTATIONS DU COCKPIT (BLOC 6)
     function updateFlightStatusBoard(history) {
         const board = document.getElementById('flightStatusBoard'); if(!board) return;
         if(history.length === 0) {
