@@ -208,8 +208,7 @@
         const dLat = (p2.lat - p1.lat) * Math.PI / 180;
         const dLon = (p2.lon - p1.lon) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        const distanceNM = Math.round(R * c * 0.539957);
+        const distanceNM = Math.round(R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))) * 0.539957);
 
         const tempsTotalMinutes = Math.round((distanceNM / 430) * 60) + 15;
         const eetStr = String(Math.floor(tempsTotalMinutes / 60)).padStart(2, '0') + ":" + String(tempsTotalMinutes % 60).padStart(2, '0');
@@ -235,17 +234,19 @@
     }
 
     function setN(id) {
-        const n = new Date(); 
-        document.getElementById(id).value = String(n.getHours()).padStart(2, '0') + ":" + String(n.getMinutes()).padStart(2, '0');
+        document.getElementById(id).value = String(new Date().getHours()).padStart(2, '0') + ":" + String(new Date().getMinutes()).padStart(2, '0');
         calcT();
     }
 
+    // CHRONOMÈTRES INDÉPENDANTS CORRIGÉS AVEC INDEX ET ENTIÈREMENT SÉCURISÉS
     function calcT() {
         function getM(id) {
             const v = document.getElementById(id).value; 
             if (!v || !v.includes(':')) return null;
             const p = v.split(':'); 
-            return (parseInt(p[0], 10) * 60) + parseInt(p[1], 10);
+            let hours = parseInt(p[0], 10) || 0;
+            let minutes = parseInt(p[1], 10) || 0; 
+            return (hours * 60) + minutes;
         }
         function fmt(d) { 
             if (d < 0) d += 1440; 
@@ -253,13 +254,8 @@
         }
         
         const o = getM('tOut'), i = getM('tIn'), f = getM('tOff'), n = getM('tOn');
-        
-        if (o !== null && i !== null) {
-            document.getElementById('blockTime').value = fmt(i - o);
-        }
-        if (f !== null && n !== null) {
-            document.getElementById('airTime').value = fmt(n - f);
-        }
+        if (o !== null && i !== null) document.getElementById('blockTime').value = fmt(i - o);
+        if (f !== null && n !== null) document.getElementById('airTime').value = fmt(n - f);
     }
 
     function saveFlight() {
@@ -267,11 +263,9 @@
         const d = document.getElementById('depICAO').value || "----";
         const a = document.getElementById('arrICAO').value || "----";
         const t = document.getElementById('aircraftType').value || "B738";
-        const v = document.getElementById('airTime').value;
-        const b = document.getElementById('blockTime').value;
+        const v = document.getElementById('airTime').value, b = document.getElementById('blockTime').value;
         const r = document.getElementById('routeText').value || `${d}-${a}`;
-        const ci = document.getElementById('costIndex').value || "N/A";
-        const fl = document.getElementById('flightLevel').value || "N/A";
+        const ci = document.getElementById('costIndex').value || "N/A", fl = document.getElementById('flightLevel').value || "N/A";
         if (c === "N/A" && d === "----") return alert("Veuillez remplir le Callsign.");
         
         let h = JSON.parse(localStorage.getItem('efb_history')) || [];
@@ -289,7 +283,7 @@
         const tbody = document.getElementById('historyTableBody'); if (!tbody) return; tbody.innerHTML = "";
         h.forEach((f, idx) => {
             const row = document.createElement('tr');
-            row.innerHTML = `<td>${f.dateStr}</td><td style="color:#38bdf8; font-weight:bold;">${f.callsign}</td><td><span style="background:#0f172a; padding:4px 8px; border-radius:4px; border:1px solid #334155;">${f.type}</span></td><td>${f.ci || 'N/A'}</td><td>${f.fl || 'N/A'}</td><td style="font-weight:500; color:#c084fc;">${f.tVol}</td><td style="font-weight:500; color:#38bdf8;">${f.tBloc}</td><td class="route-cell" title="${f.route}">${f.route}</td><td><button class="btn-row-del" onclick="deleteFlight(${idx})">Supprimer</button></td>`;
+            row.innerHTML = `<td>${f.dateStr}</td><td style="color:#38bdf8; font-weight:bold;">${f.callsign}</td><td><span style="background:#0f172a; padding:4px 8px; border-radius:4px; border:1px solid #334155;">${f.type}</span></td><td>${f.ci}</td><td>${f.fl}</td><td style="font-weight:500; color:#c084fc;">${f.tVol}</td><td style="font-weight:500; color:#38bdf8;">${f.tBloc}</td><td class="route-cell" title="${f.route}">${f.route}</td><td><button class="btn-row-del" onclick="deleteFlight(${idx})">Supprimer</button></td>`;
             tbody.appendChild(row);
         });
     }
@@ -312,13 +306,13 @@
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
     }
 
-    // SYSTEME ULTRA-SOUPLE DE CONVERSION DES MINUTES POUR LES STATS
+    // CONVERTISSEUR DE COMPTEURS CORRIGÉ SANS ÉTIREMENT DE TEXTE
     function parseTimeToMinutes(s) { 
-        if (!s) return 0;
-        let clean = s.toLowerCase().replace('h', ':').trim();
-        if (!clean.includes(':')) return 0;
-        let p = clean.split(':'); 
-        return (parseInt(p[0], 10) * 60) + parseInt(p[1], 10); 
+        if (!s || !s.includes(':')) return 0;
+        let p = s.split(':'); 
+        let h = parseInt(p[0], 10) || 0;
+        let m = parseInt(p[1], 10) || 0; 
+        return (h * 60) + m; 
     }
     
     function formatMinutesToHoursStr(m) { 
@@ -327,10 +321,7 @@
 
     function updateFlightStatusBoard(history) {
         const board = document.getElementById('flightStatusBoard'); if(!board) return;
-        if(history.length === 0) {
-            board.innerHTML = `<div style="text-align:center; color:#475569; font-style:italic; padding:15px; font-size:13px;">En attente de votre premier enregistrement...</div>`;
-            return;
-        }
+        if(history.length === 0) { board.innerHTML = `<div style="text-align:center; color:#475569; font-style:italic; padding:15px; font-size:13px;">En attente de votre premier enregistrement...</div>`; return; }
         
         let premierVol = history[0];
         let dernierVol = history[history.length - 1];
@@ -338,13 +329,7 @@
         let positionActuelle = dernierVol.arr;
 
         let allerHTML = `<div class="board-row board-header"><div class="board-col-1">TYPE DE VOL</div><div class="board-col-2">AXE / ROTATION</div><div class="board-col-3">STATUS ROTATION</div></div><div class="board-row"><div class="board-col-1 board-type" style="color:#10b981;">🛫 ALLER</div><div class="board-col-2 board-route" style="letter-spacing: 2px; font-weight: bold; color: #f8fafc;">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed">✓ COMPLETED</span></div></div>`;
-        
-        let retourHTML = "";
-        if(positionActuelle !== baseOrigine) {
-            retourHTML = `<div class="board-row"><div class="board-col-1 board-type" style="color:#f97316;">🛬 RETOUR</div><div class="board-col-2 board-route" style="color:#f97316; letter-spacing: 2px; font-weight: bold;">${positionActuelle} ➔ ${baseOrigine}</div><div class="board-col-3"><span class="board-status status-required">🚨 REQUIS</span></div></div>`;
-        } else {
-            retourHTML = `<div class="board-row"><div class="board-col-1 board-type" style="color:#38bdf8;">🛬 RETOUR</div><div class="board-col-2 board-route" style="color:#38bdf8; letter-spacing: 2px; font-weight: bold;">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed" style="color:#38bdf8; border-color:#38bdf8; background:rgba(56,189,248,0.15)">✓ DONE (BASE)</span></div></div>`;
-        }
+        let retourHTML = positionActuelle !== baseOrigine ? `<div class="board-row"><div class="board-col-1 board-type" style="color:#f97316;">🛬 RETOUR</div><div class="board-col-2 board-route" style="color:#f97316; letter-spacing: 2px; font-weight: bold;">${positionActuelle} ➔ ${baseOrigine}</div><div class="board-col-3"><span class="board-status status-required">🚨 REQUIS</span></div></div>` : `<div class="board-row"><div class="board-col-1 board-type" style="color:#38bdf8;">🛬 RETOUR</div><div class="board-col-2 board-route" style="color:#38bdf8; letter-spacing: 2px; font-weight: bold;">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed" style="color:#38bdf8; border-color:#38bdf8; background:rgba(56,189,248,0.15)">✓ DONE (BASE)</span></div></div>`;
         board.innerHTML = allerHTML + retourHTML;
     }
 
@@ -359,10 +344,8 @@
         });
         
         document.getElementById('statTotalAir').innerText = formatMinutesToHoursStr(tAir);
-        
         let topAir = "N/A", maxV = 0; for (let k in airlines) { if(airlines[k] > maxV) { maxV = airlines[k]; topAir = k; } }
         const topAirlineElem = document.getElementById('statTopAirline'); if(topAirlineElem) topAirlineElem.innerText = topAir;
-        
         document.getElementById('statEfficiency').innerText = (tBlock > 0 ? (tAir / tBlock) * 100 : 0).toFixed(1) + "%";
         updateFlightStatusBoard(h);
     }
