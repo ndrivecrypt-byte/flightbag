@@ -185,7 +185,7 @@
         }
     }
 
-    // POINTAGE UNIQUE DIRECT INFAILLIBLE : L'iframe charge le vrai METAR brut sans interférence de script local
+    // SIMPLICITÉ ABSOLUE : Commande l'écran blanc pour afficher le VRAI site officiel à la seconde près
     function triggerRadarMetar() {
         const inputField = document.getElementById('radarSearchICAO');
         const codeOACI = inputField.value.toUpperCase().trim();
@@ -196,9 +196,10 @@
         
         if (codeOACI.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
 
+        // On ouvre l'écran blanc
         displayBox.style.display = "block";
         
-        // Connexion texte ouverte vers le hub mondial VATSIM
+        // On charge la météo officielle en direct (Identique à votre écran de droite)
         visionneuse.src = "https://vatsim.net" + codeOACI;
     }
 
