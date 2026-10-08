@@ -235,19 +235,32 @@
     }
 
     function setN(id) {
-        const n = new Date(); document.getElementById(id).value = String(n.getHours()).padStart(2, '0') + ":" + String(n.getMinutes()).padStart(2, '0');
+        const n = new Date(); 
+        document.getElementById(id).value = String(n.getHours()).padStart(2, '0') + ":" + String(n.getMinutes()).padStart(2, '0');
         calcT();
     }
 
+    // RESOLUTION DES CHRONOMETRES : Calcul mathématique exact
     function calcT() {
         function getM(id) {
-            const v = document.getElementById(id).value; if (!v) return null;
-            const p = v.split(':'); return (parseInt(p, 10) * 60) + (parseInt(p, 10) || 0);
+            const v = document.getElementById(id).value; 
+            if (!v || !v.includes(':')) return null;
+            const p = v.split(':'); 
+            return (parseInt(p[0], 10) * 60) + parseInt(p[1], 10);
         }
-        function fmt(d) { if (d < 0) d += 1440; return String(Math.floor(d / 60)).padStart(2, '0') + ":" + String(d % 60).padStart(2, '0'); }
+        function fmt(d) { 
+            if (d < 0) d += 1440; 
+            return String(Math.floor(d / 60)).padStart(2, '0') + ":" + String(d % 60).padStart(2, '0'); 
+        }
+        
         const o = getM('tOut'), i = getM('tIn'), f = getM('tOff'), n = getM('tOn');
-        if (o !== null && i !== null) document.getElementById('blockTime').value = fmt(Math.abs(i - o));
-        if (f !== null && n !== null) document.getElementById('airTime').value = fmt(Math.abs(n - f));
+        
+        if (o !== null && i !== null) {
+            document.getElementById('blockTime').value = fmt(i - o);
+        }
+        if (f !== null && n !== null) {
+            document.getElementById('airTime').value = fmt(n - f);
+        }
     }
 
     function saveFlight() {
@@ -261,9 +274,13 @@
         const ci = document.getElementById('costIndex').value || "N/A";
         const fl = document.getElementById('flightLevel').value || "N/A";
         if (c === "N/A" && d === "----") return alert("Veuillez remplir le Callsign.");
-        let currentDate = new Date().toLocaleDateString('fr-FR');
+        
         let h = JSON.parse(localStorage.getItem('efb_history')) || [];
-        h.push({ dateStr: currentDate, callsign: c, route: r, type: t, tVol: v, tBloc: b, ci, fl, dep: d.toUpperCase().trim(), arr: a.toUpperCase().trim() });
+        h.push({ 
+            dateStr: new Date().toLocaleDateString('fr-FR'), 
+            callsign: c, route: r, type: t, tVol: v, tBloc: b, ci: ci, fl: fl, 
+            dep: d.toUpperCase().trim(), arr: a.toUpperCase().trim() 
+        });
         localStorage.setItem('efb_history', JSON.stringify(h)); 
         renderHistory(); renderAnalytics();
     }
@@ -300,7 +317,7 @@
         if (!s || s === "00:00" || s === "00h00") return 0; 
         let clean = s.toLowerCase().replace('h', ':').trim();
         if(!clean.includes(':')) return 0;
-        let p = clean.split(':'); return (parseInt(p, 10) * 60) + (parseInt(p, 10) || 0); 
+        let p = clean.split(':'); return (parseInt(p[0], 10) * 60) + (parseInt(p[1], 10) || 0); 
     }
     function formatMinutesToHoursStr(m) { return String(Math.floor(m / 60)).padStart(2, '0') + "h" + String(m % 60).padStart(2, '0'); }
 
@@ -310,9 +327,12 @@
             board.innerHTML = `<div style="text-align:center; color:#475569; font-style:italic; padding:15px; font-size:13px;">En attente de votre premier enregistrement...</div>`;
             return;
         }
-        let baseOrigine = history.dep, dernierVol = history[history.length - 1], positionActuelle = dernierVol.arr;
+        let dernierVol = history[history.length - 1];
+        let baseOrigine = history[0].dep || dernierVol.dep; 
+        let positionActuelle = dernierVol.arr;
+
         let allerHTML = `<div class="board-row board-header"><div class="board-col-1">TYPE DE VOL</div><div class="board-col-2">AXE / ROTATION</div><div class="board-col-3">STATUS ROTATION</div></div><div class="board-row"><div class="board-col-1 board-type" style="color:#10b981;">🛫 ALLER</div><div class="board-col-2 board-route">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed">✓ COMPLETED</span></div></div>`;
-        let retourHTML = positionActuelle !== baseOrigine ? `<div class="board-row"><div class="board-col-1 board-type" style="color:#f97316;">🛬 RETOUR</div><div class="board-col-2 board-route" style="color:#f97316;">${positionActuelle} ➔ ${baseOrigine}</div><div class="board-col-3"><span class="board-status status-required">🚨 REQUIS</span></div></div>` : `<div class="board-row"><div class="board-col-1 board-type" style="color:#38bdf8;">🛬 RETOUR</div><div class="board-col-2 board-route">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed">✓ DONE (BASE)</span></div></div>`;
+        let retourHTML = positionActuelle !== baseOrigine ? `<div class="board-row"><div class="board-col-1 board-type" style="color:#f97316;">🛬 RETOUR</div><div class="board-col-2 board-route">${positionActuelle} ➔ ${baseOrigine}</div><div class="board-col-3"><span class="board-status status-required">🚨 REQUIS</span></div></div>` : `<div class="board-row"><div class="board-col-1 board-type" style="color:#38bdf8;">🛬 RETOUR</div><div class="board-col-2 board-route">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed" style="color:#38bdf8; border-color:#38bdf8; background:rgba(56,189,248,0.15)">✓ DONE (BASE)</span></div></div>`;
         board.innerHTML = allerHTML + retourHTML;
     }
 
