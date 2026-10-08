@@ -104,8 +104,8 @@
 <div class="container">
     <h2 class="title">🕒 4. Horaires & Chronologie</h2>
     <div class="grid-layout" style="margin-bottom: 16px;">
-        <div class="input-group"><label>Départ (OUT)</label><div class="t-container"><input type="time" id="tOut" oninput="calcT()"><button class="btn-now" onclick="setN('tOut')">NOW</button></div></div>
-        <div class="input-group"><label>Départ Vol (OFF)</label><div class="t-container"><input type="time" id="tOff" oninput="calcT()"><button class="btn-now" onclick="setN('tOff')">NOW</button></div></div>
+        <div class="input-group"><label>Départ Bloc (OUT)</label><div class="t-container"><input type="time" id="tOut" oninput="calcT()"><button class="btn-now" onclick="setN('tOut')">NOW</button></div></div>
+        <div class="input-group"><label>Décollage (OFF)</label><div class="t-container"><input type="time" id="tOff" oninput="calcT()"><button class="btn-now" onclick="setN('tOff')">NOW</button></div></div>
         <div class="input-group"><label>Atterrissage (ON)</label><div class="t-container"><input type="time" id="tOn" oninput="calcT()"><button class="btn-now" onclick="setN('tOn')">NOW</button></div></div>
         <div class="input-group"><label>Arrivée Bloc (IN)</label><div class="t-container"><input type="time" id="tIn" oninput="calcT()"><button class="btn-now" onclick="setN('tIn')">NOW</button></div></div>
     </div>
