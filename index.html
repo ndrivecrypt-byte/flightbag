@@ -187,8 +187,17 @@
         }
     }
 
-    // DISPOSITIF RADICAL : Connexion directe par l'API internationale AVWX (Texte pur réel sans blocage)
-    async function triggerRadarMetar() {
+    let autoRefreshRadarTimer = null;
+    function setupRadarAutoRefresh() {
+        if(autoRefreshRadarTimer) clearInterval(autoRefreshRadarTimer);
+        document.getElementById('btn-radar-refresh').style.display = "block";
+        autoRefreshRadarTimer = setInterval(() => {
+            triggerRadarMetar(true);
+        }, 120000); 
+    }
+
+    // LIAISON LÉGALE INTERNATIONALE VATSIM : Texte brut réel sans aucune triche ni blocage CORS
+    async function triggerRadarMetar(isAuto = false) {
         const inputField = document.getElementById('radarSearchICAO');
         const icao = inputField.value.toUpperCase().trim();
         inputField.value = icao;
@@ -196,32 +205,29 @@
         const m = document.getElementById('radarMetarResult');
         if (icao.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
 
-        m.style.display = "block";
-        m.className = "metar-box status-warning";
-        m.innerText = "📡 Liaison montante avec la centrale météo mondiale AVWX...";
+        if(!isAuto) {
+            m.style.display = "block";
+            m.className = "metar-box status-warning";
+            m.innerText = "📡 Liaison montante avec les serveurs aéronautiques internationaux VATSIM...";
+        }
 
         try {
-            // Requête vers le flux texte brut de la NOAA distribué par l'API AVWX ouverte
-            const response = await fetch(`https://avwx.rest{icao}?format=json`);
+            // Interrogation directe du serveur texte de simulation (Autorisé à 100% sur GitHub Pages)
+            const response = await fetch("https://vatsim.net" + icao);
             if (response.ok) {
-                const data = await response.json();
-                if (data && data.raw) {
-                    // Injection immédiate du vrai METAR officiel brut de la minute actuelle
-                    m.innerText = data.raw.trim();
-                    m.className = "metar-box status-safe";
+                const textBrut = await response.text();
+                // Si la trame renvoyée est valide et contient bien l'OACI demandé
+                if (textBrut && textBrut.toUpperCase().includes(icao)) {
+                    m.innerText = textBrut.trim();
+                    m.className = "metar-box status-safe"; // Devient vert foncé stable
+                    if(!isAuto) setupRadarAutoRefresh();
                     return;
                 }
             }
             throw new Error();
         } catch (error) {
-            // Secours dynamique de précision basé sur la vraie heure UTC de votre montre
-            const n = new Date();
-            const jour = String(n.getUTCDate()).padStart(2, '0');
-            const minMetar = n.getUTCMinutes() >= 30 ? "30" : "00";
-            const heureZ = String(n.getUTCHours()).padStart(2, '0') + minMetar;
-            
-            m.innerText = `${icao} ${jour}${heureZ}Z AUTO 33014KT 9999 FEW030 13/07 Q1019 NOSIG`;
-            m.className = "metar-box status-safe";
+            m.innerText = `❌ ERREUR SÉCURITÉ : Station ${icao} introuvable ou serveurs météo injoignables.`;
+            m.className = "metar-box status-danger";
         }
     }
 
