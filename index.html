@@ -240,14 +240,12 @@
         calcT();
     }
 
-    // CORRECTION STRICTE DU CALCUL DES CHRONOMETRES
     function calcT() {
         function getM(id) {
             const v = document.getElementById(id).value; 
             if (!v || !v.includes(':')) return null;
             const p = v.split(':'); 
-            // Extraction séparée : p[0] pour les heures et p[1] pour les minutes
-            return (parseInt(p[0], 10) * 60) + parseInt(p[1], 10);
+            return (parseInt(p, 10) * 60) + parseInt(p, 10);
         }
         function fmt(d) { 
             if (d < 0) d += 1440; 
@@ -256,11 +254,9 @@
         
         const o = getM('tOut'), i = getM('tIn'), f = getM('tOff'), n = getM('tOn');
         
-        // Calcul indépendant du Bloc (IN - OUT)
         if (o !== null && i !== null) {
             document.getElementById('blockTime').value = fmt(i - o);
         }
-        // Calcul indépendant du Vol (ON - OFF)
         if (f !== null && n !== null) {
             document.getElementById('airTime').value = fmt(n - f);
         }
@@ -317,25 +313,36 @@
     }
 
     function parseTimeToMinutes(s) { 
-        if (!s || s === "00:00" || s === "00h00") return 0; 
-        let clean = s.toLowerCase().replace('h', ':').trim();
-        if(!clean.includes(':')) return 0;
-        let p = clean.split(':'); return (parseInt(p[0], 10) * 60) + (parseInt(p[1], 10) || 0); 
+        if (!s || !s.includes(':')) return 0;
+        let p = s.split(':'); 
+        return (parseInt(p, 10) * 60) + parseInt(p, 10); 
     }
-    function formatMinutesToHoursStr(m) { return String(Math.floor(m / 60)).padStart(2, '0') + "h" + String(m % 60).padStart(2, '0'); }
+    
+    function formatMinutesToHoursStr(m) { 
+        return String(Math.floor(m / 60)).padStart(2, '0') + "h" + String(m % 60).padStart(2, '0'); 
+    }
 
+    // REPARATION DU VISUEL DES ROTATIONS DU COCKPIT (BLOC 6)
     function updateFlightStatusBoard(history) {
         const board = document.getElementById('flightStatusBoard'); if(!board) return;
         if(history.length === 0) {
             board.innerHTML = `<div style="text-align:center; color:#475569; font-style:italic; padding:15px; font-size:13px;">En attente de votre premier enregistrement...</div>`;
             return;
         }
+        
+        let premierVol = history[0];
         let dernierVol = history[history.length - 1];
-        let baseOrigine = history.dep || dernierVol.dep; 
+        let baseOrigine = premierVol.dep; 
         let positionActuelle = dernierVol.arr;
 
-        let allerHTML = `<div class="board-row board-header"><div class="board-col-1">TYPE DE VOL</div><div class="board-col-2">AXE / ROTATION</div><div class="board-col-3">STATUS ROTATION</div></div><div class="board-row"><div class="board-col-1 board-type" style="color:#10b981;">🛫 ALLER</div><div class="board-col-2 board-route">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed">✓ COMPLETED</span></div></div>`;
-        let retourHTML = positionActuelle !== baseOrigine ? `<div class="board-row"><div class="board-col-1 board-type" style="color:#f97316;">🛬 RETOUR</div><div class="board-col-2 board-route">${positionActuelle} ➔ ${baseOrigine}</div><div class="board-col-3"><span class="board-status status-required">🚨 REQUIS</span></div></div>` : `<div class="board-row"><div class="board-col-1 board-type" style="color:#38bdf8;">🛬 RETOUR</div><div class="board-col-2 board-route">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed" style="color:#38bdf8; border-color:#38bdf8; background:rgba(56,189,248,0.15)">✓ DONE (BASE)</span></div></div>`;
+        let allerHTML = `<div class="board-row board-header"><div class="board-col-1">TYPE DE VOL</div><div class="board-col-2">AXE / ROTATION</div><div class="board-col-3">STATUS ROTATION</div></div><div class="board-row"><div class="board-col-1 board-type" style="color:#10b981;">🛫 ALLER</div><div class="board-col-2 board-route" style="letter-spacing: 2px; font-weight: bold; color: #f8fafc;">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed">✓ COMPLETED</span></div></div>`;
+        
+        let retourHTML = "";
+        if(positionActuelle !== baseOrigine) {
+            retourHTML = `<div class="board-row"><div class="board-col-1 board-type" style="color:#f97316;">🛬 RETOUR</div><div class="board-col-2 board-route" style="color:#f97316; letter-spacing: 2px; font-weight: bold;">${positionActuelle} ➔ ${baseOrigine}</div><div class="board-col-3"><span class="board-status status-required">🚨 REQUIS</span></div></div>`;
+        } else {
+            retourHTML = `<div class="board-row"><div class="board-col-1 board-type" style="color:#38bdf8;">🛬 RETOUR</div><div class="board-col-2 board-route" style="color:#38bdf8; letter-spacing: 2px; font-weight: bold;">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed" style="color:#38bdf8; border-color:#38bdf8; background:rgba(56,189,248,0.15)">✓ DONE (BASE)</span></div></div>`;
+        }
         board.innerHTML = allerHTML + retourHTML;
     }
 
@@ -344,12 +351,16 @@
         document.getElementById('statTotalFlights').innerText = h.length;
         let tAir = 0, tBlock = 0, airlines = {};
         h.forEach(f => {
-            tAir += parseTimeToMinutes(f.tVol); tBlock += parseTimeToMinutes(f.tBloc);
+            tAir += parseTimeToMinutes(f.tVol); 
+            tBlock += parseTimeToMinutes(f.tBloc);
             if (f.callsign && f.callsign.length >= 3) { let comp = f.callsign.substring(0,3); airlines[comp] = (airlines[comp] || 0) + 1; }
         });
+        
         document.getElementById('statTotalAir').innerText = formatMinutesToHoursStr(tAir);
+        
         let topAir = "N/A", maxV = 0; for (let k in airlines) { if(airlines[k] > maxV) { maxV = airlines[k]; topAir = k; } }
         const topAirlineElem = document.getElementById('statTopAirline'); if(topAirlineElem) topAirlineElem.innerText = topAir;
+        
         document.getElementById('statEfficiency').innerText = (tBlock > 0 ? (tAir / tBlock) * 100 : 0).toFixed(1) + "%";
         updateFlightStatusBoard(h);
     }
