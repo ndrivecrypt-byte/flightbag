@@ -185,22 +185,46 @@
         }
     }
 
-    // SIMPLICITÉ ABSOLUE : Commande l'écran blanc pour afficher le VRAI site officiel à la seconde près
-    function triggerRadarMetar() {
+    // EXTRACTION DU VRAI METAR TEXTUEL PAR COMPOSANT SÉCURISÉ ANTI-CORS
+    async function triggerRadarMetar() {
         const inputField = document.getElementById('radarSearchICAO');
-        const codeOACI = inputField.value.toUpperCase().trim();
-        inputField.value = codeOACI;
+        const icao = inputField.value.toUpperCase().trim();
+        inputField.value = icao;
         
-        const displayBox = document.getElementById('radarMetarResultBox');
-        const visionneuse = document.getElementById('radarMetarIframe');
+        const mBox = document.getElementById('radarMetarResultBox');
         
-        if (codeOACI.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
+        // On s'assure que l'ancien iframe n'interfère pas (on nettoie le cadre si besoin)
+        const iframe = document.getElementById('radarMetarIframe');
+        if(iframe) { iframe.style.display = "none"; iframe.src = ""; }
 
-        // On ouvre l'écran blanc
-        displayBox.style.display = "block";
-        
-        // On charge la météo officielle en direct (Identique à votre écran de droite)
-        visionneuse.src = "https://vatsim.net" + codeOACI;
+        if (icao.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
+
+        mBox.style.display = "block";
+        mBox.style.backgroundColor = "#0d2847";
+        mBox.style.color = "#bae6fd";
+        mBox.style.fontFamily = "monospace";
+        mBox.style.fontSize = "13px";
+        mBox.innerText = "📡 Liaison prioritaire avec les flux de la NOAA en direct...";
+
+        // Utilisation d'un point d'accès JSONP aéronautique universel toléré par GitHub Pages
+        const callbackName = "efb_metar_" + icao;
+        window[callbackName] = function(data) {
+            if (data && data.weatherObservation && data.weatherObservation.observation) {
+                // Affichage direct du VRAI METAR brut officiel à l'écran
+                mBox.innerText = data.weatherObservation.observation.trim();
+                mBox.style.color = "#34d399"; // Passage au vert stable d'origine
+            } else {
+                mBox.innerText = `❌ Station ${icao} momentanément indisponible sur les réseaux d'observation.`;
+                mBox.style.color = "#ef4444";
+            }
+            delete window[callbackName];
+            document.getElementById(callbackName)?.remove();
+        };
+
+        const script = document.createElement('script');
+        script.id = callbackName;
+        script.src = `https://geonames.org{icao}&username=demo&callback=${callbackName}`;
+        document.body.appendChild(script);
     }
 
     function calcW() {
