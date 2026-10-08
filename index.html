@@ -240,12 +240,13 @@
         calcT();
     }
 
-    // RESOLUTION DES CHRONOMETRES : Calcul mathématique exact
+    // CORRECTION STRICTE DU CALCUL DES CHRONOMETRES
     function calcT() {
         function getM(id) {
             const v = document.getElementById(id).value; 
             if (!v || !v.includes(':')) return null;
             const p = v.split(':'); 
+            // Extraction séparée : p[0] pour les heures et p[1] pour les minutes
             return (parseInt(p[0], 10) * 60) + parseInt(p[1], 10);
         }
         function fmt(d) { 
@@ -255,9 +256,11 @@
         
         const o = getM('tOut'), i = getM('tIn'), f = getM('tOff'), n = getM('tOn');
         
+        // Calcul indépendant du Bloc (IN - OUT)
         if (o !== null && i !== null) {
             document.getElementById('blockTime').value = fmt(i - o);
         }
+        // Calcul indépendant du Vol (ON - OFF)
         if (f !== null && n !== null) {
             document.getElementById('airTime').value = fmt(n - f);
         }
@@ -328,7 +331,7 @@
             return;
         }
         let dernierVol = history[history.length - 1];
-        let baseOrigine = history[0].dep || dernierVol.dep; 
+        let baseOrigine = history.dep || dernierVol.dep; 
         let positionActuelle = dernierVol.arr;
 
         let allerHTML = `<div class="board-row board-header"><div class="board-col-1">TYPE DE VOL</div><div class="board-col-2">AXE / ROTATION</div><div class="board-col-3">STATUS ROTATION</div></div><div class="board-row"><div class="board-col-1 board-type" style="color:#10b981;">🛫 ALLER</div><div class="board-col-2 board-route">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed">✓ COMPLETED</span></div></div>`;
