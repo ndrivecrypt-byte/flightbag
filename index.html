@@ -34,10 +34,6 @@
         .btn-row-del { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; }
         .btn-row-del:hover { background-color: #dc2626; }
         .route-cell { font-family: monospace; color: #38bdf8; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .metar-box { font-family: monospace; background-color: #0d2847; border: 1px solid #38bdf8; color: #bae6fd; padding: 12px; border-radius: 6px; margin-top: 12px; font-size: 13px; line-height: 1.5; width: 100%; word-break: break-all; }
-        .status-safe { background-color: #064e3b !important; border-color: #10b981 !important; color: #a7f3d0 !important; }
-        .status-warning { background-color: #78350f !important; border-color: #d97706 !important; color: #fef3c7 !important; }
-        .status-danger { background-color: #7f1d1d !important; border-color: #ef4444 !important; color: #fca5a5 !important; }
         .stat-badge { background: #0f172a; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
         .stat-badge .stat-val { font-weight: bold; color: #38bdf8; }
 
@@ -71,22 +67,24 @@
     </div>
 </div>
 
-<!-- LE BLOC METAR BLEU SÉPARÉ (RÉINSTALLÉ DE FORCE ICI) -->
+<!-- LE BLOC METAR INDÉPENDANT AVEC LA VISIONNEUSE EMBARQUÉE SANS SCRIPT SATELLITE BLOQUANT -->
 <div class="container" style="border-color: #38bdf8;">
     <h2 class="title" style="color: #38bdf8;">📡 2. Station Météo Radar Live (Serveur NOAA / VATSIM Direct)</h2>
-    <div class="grid-layout-3" style="align-items: end;">
+    <div class="grid-layout-3" style="align-items: end; margin-bottom: 4px;">
         <div class="input-group">
             <label style="color: #38bdf8; font-weight: bold;">🔎 Code OACI Terrain</label>
-            <input type="text" id="radarSearchICAO" placeholder="ex: LFPG" maxlength="4" style="border-color: #38bdf8; text-transform: uppercase;">
+            <input type="text" id="radarSearchICAO" placeholder="ex: LFLL" maxlength="4" style="border-color: #38bdf8; text-transform: uppercase;">
         </div>
         <div class="input-group">
             <button class="btn-act btn-g" style="height: 44px;" onclick="triggerRadarMetar()">📡 SCANNER LE TERRAIN</button>
         </div>
-        <div class="input-group">
-            <button id="btn-radar-refresh" class="btn-act btn-p" style="background-color: #475569; height: 44px; display: none;" disabled>🔄 AUTO-REFRESH ACTIF (2M)</button>
-        </div>
+        <div class="input-group" style="display: none;"></div>
     </div>
-    <div id="radarMetarResult" class="metar-box" style="display:none; color: #34d399; border-color: #10b981;"></div>
+    
+    <!-- L'écran d'affichage textuel brut réel raccordé sans blocage -->
+    <div id="radarMetarResultBox" style="display:none; margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid #334155; background: #090d16; padding: 12px;">
+        <iframe id="radarMetarIframe" src="" style="width: 100%; height: 40px; border: none; background: #090d16; overflow: hidden;" scrolling="no"></iframe>
+    </div>
 </div>
 
 <div class="container">
@@ -187,89 +185,21 @@
         }
     }
 
-    let autoRefreshRadarTimer = null;
-    function setupRadarAutoRefresh() {
-        if(autoRefreshRadarTimer) clearInterval(autoRefreshRadarTimer);
-        document.getElementById('btn-radar-refresh').style.display = "block";
-        autoRefreshRadarTimer = setInterval(() => {
-            triggerRadarMetar(true);
-        }, 120000); 
-    }
-
-    // DISPOSITIF RADICAL ET DÉFINITIF : Hub CheckWX Authentifié par Clé API prioritaire
-    async function triggerRadarMetar(isAuto = false) {
+    // POINTAGE UNIQUE DIRECT INFAILLIBLE : L'iframe charge le vrai METAR brut sans interférence de script local
+    function triggerRadarMetar() {
         const inputField = document.getElementById('radarSearchICAO');
-        const icao = inputField.value.toUpperCase().trim();
-        inputField.value = icao;
+        const codeOACI = inputField.value.toUpperCase().trim();
+        inputField.value = codeOACI;
         
-        const m = document.getElementById('radarMetarResult');
-        if (icao.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
-
-        if(!isAuto) {
-            m.style.display = "block";
-            m.className = "metar-box status-warning";
-            m.innerText = "📡 Authentification et liaison satellite avec le flux NOAA direct...";
-        }
-
-        // Utilisation d'un point d'accès JSONP alternatif authentifié par jeton privé pour contourner le CORS de GitHub
-        const callbackName = "checkwx_" + icao + "_" + Math.floor(Math.random() * 1000);
+        const displayBox = document.getElementById('radarMetarResultBox');
+        const visionneuse = document.getElementById('radarMetarIframe');
         
-        window[callbackName] = function(data) {
-            if (data && data.data && data.data[0]) {
-                let trueMetar = data.data[0].raw_text || data.data[0];
-                m.innerText = trueMetar.trim();
-                m.className = "metar-box status-safe";
-                if(!isAuto) setupRadarAutoRefresh();
-            } else {
-                genererMeteoSecoursFidele(icao, m, isAuto);
-            }
-            delete window[callbackName];
-            document.getElementById(callbackName)?.remove();
-        };
+        if (codeOACI.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
 
-        const script = document.createElement('script');
-        script.id = callbackName;
-        // Connexion sécurisée par jeton développeur dédié pour votre application Flight Bag
-        script.src = `https://checkwx.com{icao}?apikey=69808d249f0547db95f1906a23&format=json&callback=${callbackName}`;
-        document.body.appendChild(script);
+        displayBox.style.display = "block";
         
-        // Anti-blocage : Si le réseau met plus de 1,8 seconde à répondre, le cockpit bascule sur le secours logique
-        setTimeout(() => {
-            if (m.className.includes('status-warning')) {
-                genererMeteoSecoursFidele(icao, m, isAuto);
-                delete window[callbackName];
-                document.getElementById(callbackName)?.remove();
-            }
-        }, 1800);
-    }
-
-    // SÉCURITÉ Opérationnelle : Calcule une trame OACI évolutive en tâche de fond
-    function genererMeteoSecoursFidele(icao, m, isAuto) {
-        const n = new Date();
-        const jour = String(n.getUTCDate()).padStart(2, '0');
-        let minMetar = n.getUTCMinutes() >= 30 ? "30" : "00";
-        const heureZ = String(n.getUTCHours()).padStart(2, '0') + minMetar;
-        
-        let seed = 0; for (let j = 0; j < icao.length; j++) { seed += icao.charCodeAt(j); }
-        seed += n.getUTCMinutes();
-
-        const ventDir = String((seed * 17) % 360).padStart(3, '0');
-        const ventVit = (seed % 10) + 7;
-        let qnh = 1012 + (seed % 8);
-        let temp = 13;
-        let cond = "CAVOK";
-
-        if (icao.startsWith('LF')) {
-            temp = 10 + (seed % 6); // Température réaliste d'Automne
-            cond = (seed % 3 === 0) ? "9999 BKN025" : "CAVOK";
-        } else if (icao.startsWith('DA')) {
-            temp = 22 + (seed % 5);
-            cond = "CAVOK";
-        }
-
-        m.innerText = `${icao} ${jour}${heureZ}Z AUTO ${ventDir === "000" ? "360" : ventDir}${String(ventVit).padStart(2, '0')}KT ${cond} ${String(temp).padStart(2, '0')}/${String(temp-3).padStart(2, '0')} Q${qnh} NOSIG`;
-        m.className = "metar-box status-safe";
-        if(!isAuto) setupRadarAutoRefresh();
+        // Connexion texte ouverte vers le hub mondial VATSIM
+        visionneuse.src = "https://vatsim.net" + codeOACI;
     }
 
     function calcW() {
@@ -288,14 +218,13 @@
         calcT();
     }
 </script>
-
 <script>
     function calcT() {
         function getM(id) {
             const v = document.getElementById(id).value; if (!v) return null;
             const parts = v.split(':'); 
-            let hours = parseInt(parts, 10) || 0;
-            let minutes = parseInt(parts, 10) || 0;
+            let hours = parseInt(parts[0], 10) || 0;
+            let minutes = parseInt(parts[1], 10) || 0;
             return (hours * 60) + minutes;
         }
         function fmt(d) { if (d < 0) d += 1440; return String(Math.floor(d / 60)).padStart(2, '0') + ":" + String(d % 60).padStart(2, '0'); }
@@ -343,6 +272,7 @@
         if(confirm("Voulez-vous effacer tout l'historique des vols ?")) { localStorage.removeItem('efb_history'); renderHistory(); renderAnalytics(); }
     }
 
+    // Gestion de l'exportation Excel
     function exportCSV() {
         const h = JSON.parse(localStorage.getItem('efb_history')) || []; if(h.length === 0) return alert("Historique vide.");
         let csv = "Date;Callsign;Route;Avion;Cost Index;Flight Level;Temps Vol;Temps Bloc\n";
@@ -357,7 +287,7 @@
         let clean = s.toLowerCase().replace('h', ':').trim();
         if(!clean.includes(':')) return 0;
         let p = clean.split(':'); 
-        return (parseInt(p, 10) * 60) + (parseInt(p, 10) || 0); 
+        return (parseInt(p[0], 10) * 60) + (parseInt(p[1], 10) || 0); 
     }
     function formatMinutesToHoursStr(m) { return String(Math.floor(m / 60)).padStart(2, '0') + "h" + String(m % 60).padStart(2, '0'); }
 
@@ -367,7 +297,7 @@
             board.innerHTML = `<div style="text-align:center; color:#475569; font-style:italic; padding:15px; font-size:13px;">En attente de votre premier enregistrement de vol pour générer les rotations...</div>`;
             return;
         }
-        let baseOrigine = history.dep; 
+        let baseOrigine = history[0].dep; 
         let dernierVol = history[history.length - 1];
         let positionActuelle = dernierVol.arr;
 
