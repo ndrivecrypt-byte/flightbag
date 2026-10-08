@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electronic Flight Bag - Cockpit Master</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; background-color: #0f172a; color: #f1f5f9; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 20px; width: 100%; min-height: 100vh; overflow-x: hidden; }
+        .container { background-color: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; width: 100%; max-width: 1000px; min-width: 0; }
+        .title { margin: 0 0 20px 0; color: #38bdf8; font-size: 18px; border-bottom: 1px solid #334155; padding-bottom: 10px; text-transform: uppercase; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .grid-layout { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; width: 100%; }
+        .grid-layout-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; }
+        @media (max-width: 850px) { .grid-layout, .grid-layout-3 { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 550px) { .grid-layout, .grid-layout-3 { grid-template-columns: 1fr; } }
+        .input-group { display: flex; flex-direction: column; width: 100%; min-width: 0; }
+        .t-container { display: flex; gap: 6px; width: 100%; align-items: center; }
+        .label-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 6px; }
+        label { font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 500; letter-spacing: 0.5px; }
+        input { padding: 12px; border: 1px solid #475569; border-radius: 8px; font-size: 14px; background-color: #0f172a; color: #f8fafc; outline: none; width: 100%; height: 44px; min-width: 0; }
+        input:focus { border-color: #38bdf8; }
+        input:disabled { color: #ffffff; font-weight: bold; border-color: #334155; background-color: #1e293b; }
+        .btn-now { background-color: #38bdf8; color: #0f172a; border: none; height: 44px; padding: 0 12px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+        .btn-now:hover { background-color: #7dd3fc; }
+        .act-bar { width: 100%; max-width: 1000px; display: flex; flex-wrap: wrap; gap: 15px; }
+        .btn-act { border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; font-size: 14px; white-space: nowrap; flex: 1; min-width: 130px; text-align: center; }
+        .btn-act:hover { opacity: 0.9; }
+        .btn-g { background-color: #10b981; } .btn-p { background-color: #6366f1; } .btn-o { background-color: #f97316; } .btn-r { background-color: #ef4444; }
+        .table-wrapper { width: 100%; overflow-x: auto; margin-top: 10px; border-radius: 8px; border: 1px solid #334155; }
+        .flight-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; background-color: #0f172a; min-width: 700px; }
+        .flight-table th { background-color: #1e293b; color: #94a3b8; font-size: 10px; text-transform: uppercase; padding: 12px; font-weight: 600; letter-spacing: 0.5px; border-bottom: 2px solid #334155; }
+        .flight-table td { padding: 12px; border-bottom: 1px solid #1e293b; color: #f8fafc; vertical-align: middle; }
+        .flight-table tr:hover { background-color: #1e293b; }
+        .btn-row-del { background-color: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        .btn-row-del:hover { background-color: #dc2626; }
+        .route-cell { font-family: monospace; color: #38bdf8; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .metar-box { font-family: monospace; background-color: #0d2847; border: 1px solid #38bdf8; color: #bae6fd; padding: 12px; border-radius: 6px; margin-top: 12px; font-size: 13px; line-height: 1.5; width: 100%; word-break: break-all; }
+        .stat-badge { background: #0f172a; padding: 8px 12px; border-radius: 6px; border: 1px solid #334155; font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .stat-badge .stat-val { font-weight: bold; color: #38bdf8; }
+
+        .board-wrapper { width: 100%; border-radius: 8px; border: 1px solid #334155; background-color: #090d16; padding: 15px; margin-top: 5px; font-family: monospace; }
+        .board-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; padding: 12px; border-bottom: 1px solid #1e293b; font-size: 14px; width: 100%; }
+        .board-row:last-child { border-bottom: none; }
+        .board-header { font-weight: bold; color: #64748b; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; padding-bottom: 8px; border-bottom: 2px solid #1e293b; display: flex; }
+        .board-col-1 { flex: 1; min-width: 110px; }
+        .board-col-2 { flex: 2; min-width: 140px; color: #f8fafc; font-size: 15px; letter-spacing: 1px; }
+        .board-col-3 { flex: 1; min-width: 130px; text-align: right; }
+        .board-type { font-weight: bold; }
+        .board-status { text-align: center; font-weight: bold; padding: 6px 12px; border-radius: 6px; text-transform: uppercase; font-size: 11px; display: inline-block; width: 100%; max-width: 130px; }
+        .status-completed { background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; }
+        .status-required { background-color: rgba(249, 115, 22, 0.15); color: #f97316; border: 1px solid #f97316; animation: boardPulse 1.5s infinite; }
+        @keyframes boardPulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 class="title">✈️ 1. Infos avion & route</h2>
+    <div class="grid-layout">
+        <div class="input-group"><label>Compagnie (OACI)</label><input type="text" id="airlineICAO" placeholder="ex: RYR" maxlength="3" oninput="updateAirline(this)"><div id="airlineName" class="info-subtext"></div></div>
+        <div class="input-group"><label>Type avion</label><input type="text" id="aircraftType" value="B738" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="input-group"><label>Callsign</label><input type="text" id="callsign" placeholder="ex: RYR102" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="input-group"><label>N° Vol</label><input type="text" id="flightNumber" placeholder="ex: FR102" oninput="this.value=this.value.toUpperCase()"></div>
+    </div>
+    <div class="grid-layout-3" style="margin-top: 16px;">
+        <div class="input-group"><label>OACI Départ</label><input type="text" id="depICAO" placeholder="LFPG" maxlength="4" oninput="syncRouteICAO()"></div>
+        <div class="input-group"><label>OACI Arrivée</label><input type="text" id="arrICAO" placeholder="LFMN" maxlength="4" oninput="syncRouteICAO()"></div>
+        <div class="input-group"><label>Altitude Transition (TA)</label><input type="text" id="transitionAltitude" disabled placeholder="Calcul automatique..."></div>
+    </div>
+</div>
+
+<!-- LE COMPARTIMENT METAR ENTIÈREMENT SÉPARÉ ET CONNECTÉ SUR INTERNET -->
+<div class="container" style="border-color: #38bdf8;">
+    <h2 class="title" style="color: #38bdf8;">📡 2. Station Météo Radar Live (Serveur NOAA / VATSIM Direct)</h2>
+    <div class="grid-layout-3" style="align-items: end;">
+        <div class="input-group">
+            <label style="color: #38bdf8; font-weight: bold;">🔎 Code OACI Terrain</label>
+            <input type="text" id="radarSearchICAO" placeholder="ex: LFPG" maxlength="4" style="border-color: #38bdf8; text-transform: uppercase;">
+        </div>
+        <div class="input-group">
+            <button class="btn-act btn-g" style="background-color: #0284c7; height: 44px;" onclick="triggerRadarMetar()">📡 SCANNER LE TERRAIN</button>
+        </div>
+        <div class="input-group">
+            <button id="btn-radar-refresh" class="btn-act btn-p" style="background-color: #475569; height: 44px; display: none;" disabled>🔄 AUTO-REFRESH ACTIF (2M)</button>
+        </div>
+    </div>
+    
+    <!-- Zone verte d'affichage du vrai METAR textuel brut -->
+    <div id="radarMetarResult" class="metar-box" style="display:none; color: #34d399; border-color: #10b981;"></div>
+</div>
+
+<div class="container">
+    <h2 class="title">Devis Carburant (B737-800)</h2>
+    <div class="grid-layout">
+        <div class="input-group"><label>OEW (Vide fixe)</label><input type="text" id="oew" value="41 400 kg" disabled></div>
+        <div class="input-group"><label>Nombre Passagers</label><input type="number" id="pax" placeholder="150" oninput="calcW()"></div>
+        <div class="input-group"><label>Masse Cargo (kg)</label><input type="number" id="cargo" placeholder="3500" oninput="calcW()"></div>
+        <div class="input-group"><label>Block Fuel (kg)</label><input type="number" id="blockFuel" placeholder="7500" oninput="calcW()"></div>
+        <div class="input-group"><label>Cost Index (CI)</label><input type="number" id="costIndex" placeholder="ex: 6" min="0" max="99"></div>
+        <div class="input-group"><label>Flight Level (FL)</label><input type="text" id="flightLevel" placeholder="ex: 350" maxlength="5" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="input-group"><label>ZFW (MAX 61 688 kg)</label><input type="text" id="zfw" disabled placeholder="Calcul automatique"></div>
+        <div class="input-group"><label>Gross Weight / TOW</label><input type="text" id="tow" disabled placeholder="Calcul automatique"></div>
+    </div>
+</div>
+
+<div class="container">
+    <h2 class="title">🛠️ 3. Paramètres Techniques & Route</h2>
+    <div class="grid-layout" style="margin-bottom: 16px;">
+        <div class="input-group"><label>SQUAWK</label><input type="text" id="squawk" placeholder="ex: 2000" maxlength="4"></div>
+        <div class="input-group"><label>V1 (Décision)</label><input type="number" id="v1" placeholder="ex: 142"></div>
+        <div class="input-group"><label>VR (Rotation)</label><input type="number" id="vr" placeholder="ex: 145"></div>
+        <div class="input-group"><label>V2 (Sécurité)</label><input type="number" id="v2" placeholder="ex: 149"></div>
+    </div>
+    <div class="input-group"><label>Route de vol complète</label><input type="text" id="routeText" placeholder="SID POINT1 AIRWAY POINT2 STAR..." oninput="this.value=this.value.toUpperCase()"></div>
+</div>
+
+<div class="container">
+    <h2 class="title">🕒 4. Horaires & Chronologie</h2>
+    <div class="grid-layout" style="margin-bottom: 16px;">
+        <div class="input-group"><label>Départ (OUT)</label><div class="t-container"><input type="time" id="tOut" oninput="calcT()"><button class="btn-now" onclick="setN('tOut')">NOW</button></div></div>
+        <div class="input-group"><label>Départ Vol (OFF)</label><div class="t-container"><input type="time" id="tOff" oninput="calcT()"><button class="btn-now" onclick="setN('tOff')">NOW</button></div></div>
+        <div class="input-group"><label>Atterrissage (ON)</label><div class="t-container"><input type="time" id="tOn" oninput="calcT()"><button class="btn-now" onclick="setN('tOn')">NOW</button></div></div>
+        <div class="input-group"><label>Arrivée Bloc (IN)</label><div class="t-container"><input type="time" id="tIn" oninput="calcT()"><button class="btn-now" onclick="setN('tIn')">NOW</button></div></div>
+    </div>
+    <div class="grid-layout-3">
+        <div class="input-group"><label>Temps de Vol</label><input type="text" id="airTime" disabled value="00:00"></div>
+        <div class="input-group"><label>Temps de Bloc</label><input type="text" id="blockTime" disabled value="00:00"></div>
+        <div class="input-group" style="display:none;"></div>
+    </div>
+</div>
+
+<div class="act-bar">
+    <button class="btn-act btn-g" style="background-color: #10b981;" onclick="saveFlight()">💾 Enregistrer Vol</button>
+    <button class="btn-act btn-o" onclick="exportCSV()">📤 Exporter CSV</button>
+    <button class="btn-act btn-p" onclick="window.print()">🖨️ Imprimer</button>
+    <button class="btn-act btn-r" onclick="clearAllHistory()">🗑️ Tout effacer</button>
+</div>
+
+<div class="container">
+    <h2 class="title">📊 5. Historique des vols (Registre en Ligne)</h2>
+    <div class="table-wrapper">
+        <table class="flight-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Callsign</th>
+                    <th>Appareil</th>
+                    <th>CI</th>
+                    <th>FL</th>
+                    <th>Temps Vol</th>
+                    <th>Temps Bloc</th>
+                    <th>Route de vol</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="container" style="border-color: #10b981;">
+    <h2 class="title" style="color: #34d399;">📊 6. Tableau de Bord d'Analyse Flotte</h2>
+    <div class="grid-layout" style="margin-bottom: 20px;">
+        <div class="stat-badge"><span>Total Vols :</span><span id="statTotalFlights" class="stat-val">0</span></div>
+        <div class="stat-badge"><span>Heures de Vol :</span><span id="statTotalAir" class="stat-val" style="color:#c084fc;">00h00</span></div>
+        <div class="stat-badge"><span>Top Compagnie :</span><span id="statTotalFlights" class="stat-val" id="statTopAirline">N/A</span></div>
+        <div class="stat-badge"><span>Éco-Efficience Roulage :</span><span id="statEfficiency" class="stat-val" style="color:#10b981;">0.0%</span></div>
+    </div>
+    
+    <div style="margin-bottom: 5px;"><label style="color:#34d399; font-weight: 500;">🖥️ Statut des Rotations Flotte (Flight Status Board)</label></div>
+    <div class="board-wrapper" id="flightStatusBoard">
+        <!-- Rempli dynamiquement par JavaScript -->
+    </div>
+</div>
+<script>
+    function updateAirline(i) {
+        const v = i.value.toUpperCase(); i.value = v;
+        const n = document.getElementById('airlineName');
+        const c = { 'RYR': 'Ryanair', 'DAH': 'Air Algérie', 'AFR': 'Air France', 'EJU': 'EasyJet', 'TVF': 'Transavia' };
+        n.innerText = c[v] || '';
+    }
+
+    function syncRouteICAO() {
+        const dep = document.getElementById('depICAO').value.toUpperCase().trim();
+        if(dep.length === 4) {
+            document.getElementById('transitionAltitude').value = dep.startsWith('K') ? "FL180 (US)" : "5000 ft (FR)";
+        }
+    }
+
+    let autoRefreshRadarTimer = null;
+    function setupRadarAutoRefresh() {
+        if(autoRefreshRadarTimer) clearInterval(autoRefreshRadarTimer);
+        document.getElementById('btn-radar-refresh').style.display = "block";
+        autoRefreshRadarTimer = setInterval(() => {
+            triggerRadarMetar(true);
+        }, 120000); // Actualisation toutes les 2 minutes
+    }
+
+    // LE LIEN RÉSEAU EN DIRECT FONCTIONNEL SUR GITHUB : Aspire la vraie ligne textuelle brute officielle
+    async function triggerRadarMetar(isAuto = false) {
+        const inputField = document.getElementById('radarSearchICAO');
+        const icao = inputField.value.toUpperCase().trim();
+        inputField.value = icao;
+        
+        const m = document.getElementById('radarMetarResult');
+        if (icao.length !== 4) return alert("Veuillez entrer un code OACI valide à 4 lettres.");
+
+        if(!isAuto) {
+            m.style.display = "block";
+            m.className = "metar-box status-warning";
+            m.innerText = "📡 Réception du signal NOAA réel depuis les serveurs VATSIM...";
+        }
+
+        try {
+            // Requête texte brut directe autorisée nativement sur GitHub Pages (Sans restrictions CORS)
+            const response = await fetch(`https://vatsim.net{icao}`);
+            if (response.ok) {
+                const textBrut = await response.text();
+                if (textBrut && textBrut.toUpperCase().includes(icao)) {
+                    // Injection instantanée de la trame 100% réelle à l'écran
+                    m.innerText = textBrut.trim();
+                    m.className = "metar-box status-safe";
+                    if(!isAuto) setupRadarAutoRefresh();
+                    return;
+                }
+            }
+            throw new Error();
+        } catch (error) {
+            m.innerText = `❌ ERREUR RÉSEAU : Impossible de joindre le serveur. Assurez-vous d'être connecté à internet.`;
+            m.className = "metar-box status-danger";
+        }
+    }
+
+    function calcW() {
+        const p = parseInt(document.getElementById('pax').value) || 0;
+        const c = parseInt(document.getElementById('cargo').value) || 0;
+        const b = parseInt(document.getElementById('blockFuel').value) || 0;
+        const z = 41400 + (p * 84) + c; const t = z + b;
+        const zE = document.getElementById('zfw'), tE = document.getElementById('tow');
+        zE.value = z.toLocaleString('fr-FR') + " kg"; tE.value = t.toLocaleString('fr-FR') + " kg";
+        zE.className = z > 61688 ? "status-danger" : "status-safe";
+        tE.className = t > 76657 ? "status-danger" : "status-safe";
+    }
+
+    function setN(id) {
+        const n = new Date(); document.getElementById(id).value = String(n.getHours()).padStart(2, '0') + ":" + String(n.getMinutes()).padStart(2, '0');
+        calcT();
+    }
+</script>
+<script>
+    function calcT() {
+        function getM(id) {
+            const v = document.getElementById(id).value; if (!v) return null;
+            const parts = v.split(':'); 
+            let hours = parseInt(parts, 10) || 0;
+            let minutes = parseInt(parts, 10) || 0;
+            return (hours * 60) + minutes;
+        }
+        function fmt(d) { if (d < 0) d += 1440; return String(Math.floor(d / 60)).padStart(2, '0') + ":" + String(d % 60).padStart(2, '0'); }
+        const o = getM('tOut'), i = getM('tIn'), f = getM('tOff'), n = getM('tOn');
+        if (o !== null && i !== null) document.getElementById('blockTime').value = fmt(Math.abs(i - o));
+        if (f !== null && n !== null) document.getElementById('airTime').value = fmt(Math.abs(n - f));
+    }
+
+    function saveFlight() {
+        const c = document.getElementById('callsign').value || "N/A";
+        const d = document.getElementById('depICAO').value || "----";
+        const a = document.getElementById('arrICAO').value || "----";
+        const t = document.getElementById('aircraftType').value || "B738";
+        const v = document.getElementById('airTime').value;
+        const b = document.getElementById('blockTime').value;
+        const r = document.getElementById('routeText').value || `${d}-${a}`;
+        const ci = document.getElementById('costIndex').value || "N/A";
+        const fl = document.getElementById('flightLevel').value || "N/A";
+        if (c === "N/A" && d === "----") return alert("Veuillez remplir le Callsign.");
+        let currentDate = new Date().toLocaleDateString('fr-FR');
+        let h = JSON.parse(localStorage.getItem('efb_history')) || [];
+        h.push({ dateStr: currentDate, callsign: c, route: r, type: t, tVol: v, tBloc: b, ci, fl, dep: d.toUpperCase().trim(), arr: a.toUpperCase().trim() });
+        localStorage.setItem('efb_history', JSON.stringify(h)); 
+        renderHistory();
+        renderAnalytics();
+    }
+
+    function renderHistory() {
+        const h = JSON.parse(localStorage.getItem('efb_history')) || [];
+        const tbody = document.getElementById('historyTableBody'); if (!tbody) return; tbody.innerHTML = "";
+        h.forEach((f, idx) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${f.dateStr}</td><td style="color:#38bdf8; font-weight:bold;">${f.callsign}</td><td><span style="background:#0f172a; padding:4px 8px; border-radius:4px; border:1px solid #334155;">${f.type}</span></td><td>${f.ci || 'N/A'}</td><td>${f.fl || 'N/A'}</td><td style="font-weight:500; color:#c084fc;">${f.tVol}</td><td style="font-weight:500; color:#38bdf8;">${f.tBloc}</td><td class="route-cell" title="${f.route}">${f.route}</td><td><button class="btn-row-del" onclick="deleteFlight(${idx})">Supprimer</button></td>`;
+            tbody.appendChild(row);
+        });
+    }
+
+    function deleteFlight(idx) {
+        let h = JSON.parse(localStorage.getItem('efb_history')) || []; h.splice(idx, 1);
+        localStorage.setItem('efb_history', JSON.stringify(h)); 
+        renderHistory(); renderAnalytics();
+    }
+
+    function clearAllHistory() {
+        if(confirm("Voulez-vous effacer tout l'historique des vols ?")) { localStorage.removeItem('efb_history'); renderHistory(); renderAnalytics(); }
+    }
+
+    function exportCSV() {
+        const h = JSON.parse(localStorage.getItem('efb_history')) || []; if(h.length === 0) return alert("Historique vide.");
+        let csv = "Date;Callsign;Route;Avion;Cost Index;Flight Level;Temps Vol;Temps Bloc\n";
+        h.forEach(f => { csv += `${f.dateStr};${f.callsign};${f.route};${f.type};${f.ci};${f.fl};${f.tVol};${f.tBloc}\n`; });
+        const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "historique_vols.csv");
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    function parseTimeToMinutes(s) { 
+        if (!s || s === "00:00" || s === "00h00") return 0; 
+        let clean = s.toLowerCase().replace('h', ':').trim();
+        if(!clean.includes(':')) return 0;
+        let p = clean.split(':'); 
+        return (parseInt(p, 10) * 60) + (parseInt(p, 10) || 0); 
+    }
+    function formatMinutesToHoursStr(m) { return String(Math.floor(m / 60)).padStart(2, '0') + "h" + String(m % 60).padStart(2, '0'); }
+
+    function updateFlightStatusBoard(history) {
+        const board = document.getElementById('flightStatusBoard'); if(!board) return;
+        if(history.length === 0) {
+            board.innerHTML = `<div style="text-align:center; color:#475569; font-style:italic; padding:15px; font-size:13px;">En attente de votre premier enregistrement de vol pour générer les rotations...</div>`;
+            return;
+        }
+        let baseOrigine = history.dep; 
+        let dernierVol = history[history.length - 1];
+        let positionActuelle = dernierVol.arr;
+
+        let allerHTML = `
+            <div class="board-row board-header"><div class="board-col-1">TYPE DE VOL</div><div class="board-col-2">AXE / ROTATION</div><div class="board-col-3">STATUS ROTATION</div></div>
+            <div class="board-row"><div class="board-col-1 board-type" style="color:#10b981;">🛫 ALLER</div><div class="board-col-2 board-route">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed">✓ COMPLETED</span></div></div>
+        `;
+        let retourHTML = "";
+        if(positionActuelle !== baseOrigine) {
+            retourHTML = `<div class="board-row"><div class="board-col-1 board-type" style="color:#f97316;">🛬 RETOUR</div><div class="board-col-2 board-route" style="color:#f97316;">${positionActuelle} ➔ ${baseOrigine}</div><div class="board-col-3"><span class="board-status status-required">🚨 REQUIS</span></div></div>`;
+        } else {
+            retourHTML = `<div class="board-row"><div class="board-col-1 board-type" style="color:#38bdf8;">🛬 RETOUR</div><div class="board-col-2 board-route">${dernierVol.dep} ➔ ${dernierVol.arr}</div><div class="board-col-3"><span class="board-status status-completed" style="color:#38bdf8; border-color:#38bdf8; background:rgba(56,189,248,0.15)">✓ DONE (BASE)</span></div></div>`;
+        }
+        board.innerHTML = allerHTML + retourHTML;
+    }
+
+    function renderAnalytics() {
+        const h = JSON.parse(localStorage.getItem('efb_history')) || [];
+        document.getElementById('statTotalFlights').innerText = h.length;
+        let tAir = 0, tBlock = 0, airlines = {};
+        h.forEach(f => {
+            tAir += parseTimeToMinutes(f.tVol); tBlock += parseTimeToMinutes(f.tBloc);
+            if (f.callsign && f.callsign.length >= 3) { let comp = f.callsign.substring(0,3); airlines[comp] = (airlines[comp] || 0) + 1; }
+        });
+        document.getElementById('statTotalAir').innerText = formatMinutesToHoursStr(tAir);
+        let topAir = "N/A", maxV = 0; for (let k in airlines) { if(airlines[k] > maxV) { maxV = airlines[k]; topAir = k; } }
+        if(document.getElementById('statTopAirline')) document.getElementById('statTopAirline').innerText = topAir;
+        document.getElementById('statEfficiency').innerText = (tBlock > 0 ? (tAir / tBlock) * 100 : 0).toFixed(1) + "%";
+        updateFlightStatusBoard(h);
+    }
+
+    window.onload = function() { renderHistory(); renderAnalytics(); };
+</script>
+</body>
+</html>
